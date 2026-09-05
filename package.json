@@ -1,0 +1,17 @@
+{
+  "name": "kisan-mandi",
+  "version": "1.0.0",
+  "description": "Kisan Mandi - Smart Farmer Procurement Platform",
+  "scripts": {
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "dev": "concurrently --kill-others-on-fail \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "migrate": "cd server && npm run migrate",
+    "seed": "cd server && npm run seed",
+    "setup": "npm run migrate && npm run seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
