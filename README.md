@@ -1,42 +1,76 @@
 # 🌾 Kisan Mandi (किसान मंडी)
 
-> **Smart Agricultural Procurement & E-Token System**
-> A modern digital mandi platform empowering farmers with seamless slot booking, real-time queue tracking, automated Minimum Support Price (MSP) calculation, transparent quality inspection, digital J-Form receipts, and direct benefit transfer (DBT) tracking.
+> **Smart Agricultural MSP Procurement, E-Token Queue & Anti-Corruption Governance Platform**
+> A modern digital agri-procurement ecosystem empowering farmers with digital slot booking, real-time WebSocket queue tracking, dynamic 7/12 land record yield quotas, transparent quality grading, instant digital J-Form receipts, DBT subsidy tracking, live weather & MSP advisories with Marathi/English Text-to-Speech, and an apex Super Admin Vigilance tribunal for direct reporting of mandi malpractice.
+
+---
+
+## 🌐 Live Production Deployment
+
+| Service | Platform | Live URL |
+| :--- | :---: | :--- |
+| **Frontend Application** | **Vercel** | 🔗 **[https://kisan-mandi-pied.vercel.app](https://kisan-mandi-pied.vercel.app)** |
+| **Backend REST & Socket.IO API** | **Render** | 🔗 **[https://kisan-mandi-api-2hwb.onrender.com](https://kisan-mandi-api-2hwb.onrender.com)** |
+| **Cloud PostgreSQL Database** | **Neon** | 🐘 `PostgreSQL 16 Cloud Instance (Singapore)` |
+| **Source Code Repository** | **GitHub** | 📦 **[https://github.com/saksham-kamble/kisan-mandi](https://github.com/saksham-kamble/kisan-mandi)** |
 
 ---
 
 ## 📑 Table of Contents
 
 - [Overview & Problem Statement](#-overview--problem-statement)
+- [Key Features](#-key-features)
 - [System Architecture](#-system-architecture)
-- [How Data is Stored (Database Schema)](#-how-data-is-stored-database-schema)
-- [How the Backend Works](#-how-the-backend-works)
-- [How the Frontend Connects to the Backend](#-how-the-frontend-connects-to-the-backend)
+- [Role-Based Access Control (RBAC)](#-role-based-access-control-rbac)
+- [Quick Demo Credentials](#-quick-demo-credentials)
+- [Database Schema (13 Migrations)](#-database-schema-13-migrations)
 - [End-to-End Data Flow](#-end-to-end-data-flow)
-- [Tech Stack](#-tech-stack)
-- [Project Structure](#-project-structure)
 - [API Reference](#-api-reference)
-- [WebSocket Events](#-websocket-events)
-- [Getting Started & Setup Guide](#-getting-started--setup-guide)
-- [Environment Variables](#-environment-variables)
+- [WebSocket Live Queue Events](#-websocket-live-queue-events)
+- [Local Development & Setup Guide](#-local-development--setup-guide)
+- [Deployment Guide](#-deployment-guide)
 
 ---
 
 ## 📌 Overview & Problem Statement
 
-Traditional agricultural mandis (procurement centers) often suffer from:
-1. **Severe Congestion & Long Waiting Times**: Farmers wait in queues with loaded tractor-trolleys for days.
-2. **Intermediary Exploitation**: Lack of transparent pricing and quota monitoring allows middlemen to hoard procurement benefits.
-3. **Delayed & Opaque Payments**: Farmers struggle to track MSP payment disbursement.
-4. **Disputes in Quality Grading**: Lack of standardized grading and digital receipts.
+Traditional agricultural mandis (APMCs) across India suffer from:
+1. **Severe Congestion & Days-Long Highway Queues**: Farmers wait with loaded tractor-trolleys for 3–5 days, burning fuel and suffering distress.
+2. **Intermediary Exploitation & Quota Hoarding**: Traders and middlemen pose as farmers to hoard government MSP procurement benefits.
+3. **Arbitrary Quality Cuts & Scale Tampering**: Subjective quality and moisture deductions by local clerks without transparent receipts.
+4. **Delayed Payments & Lack of Escalation**: Farmers struggle to track Direct Benefit Transfer (DBT) disbursements and have no mechanism to report local mandi officer corruption to higher authorities.
 
 ### 💡 The Kisan Mandi Solution
-- **E-Token & Slot Management**: Farmers schedule specific time slots at designated procurement centres.
-- **7/12 Land Record Verification & Quota Enforcement**: Calculates fair procurement quotas based on land acreage to prevent hoarding.
-- **Real-Time Live Queue**: WebSocket-driven live queue status (Waiting $\to$ At Gate $\to$ Weighing $\to$ Quality Inspection $\to$ Completed).
-- **Quality Inspection & Digital J-Form**: Instant digital procurement receipt generation with grade breakdown and net MSP calculation.
-- **DBT Payment Tracking**: End-to-end transparent status tracking (Pending $\to$ Processing $\to$ Transferred).
-- **Multilingual Support**: Accessible interface in English, Hindi, and regional languages.
+* **E-Token & Slotted Yard Entry**: Farmers schedule preferred arrival windows at designated procurement centres.
+* **7/12 Digital Land Record Verification**: Calculates agricultural yield quotas dynamically (e.g., $18\text{ quintals/acre}$ for Wheat) to eliminate quota hoarding.
+* **Real-Time WebSocket Queue**: Live queue board (Waiting $\to$ At Gate $\to$ Weighing $\to$ Quality Inspection $\to$ Completed) with instant status sync.
+* **Standardized Quality Inspection & Digital J-Form**: Instant digital procurement receipt with moisture deduction formulas and official net MSP calculation.
+* **Direct Benefit Transfer (DBT) Tracker**: End-to-end transparent subsidy tracking (`Pending` $\to$ `Processing` $\to$ `Transferred`) with bank account management.
+* **Mandi Announcements & Weather Advisories**: Real-time government MSP revisions, IMD weather warnings, and scheme notifications with **Marathi & English Web Speech API Text-to-Speech (TTS)**.
+* **Super Admin Vigilance Tribunal**: A higher administrative tier above local Mandi Admins allowing farmers to report mandi malpractice directly to the **District Nodal Officer / APMC Director**.
+
+---
+
+## 🚀 Key Features
+
+### 1. 🌾 Farmer Experience
+* **1-Click Registration & OTP Verification**: Phone verification with universal demo OTP auto-fill.
+* **Farmer Profile & DBT Bank Management**: Update personal info, village, district, Aadhaar last 4, and bank account details for fast payouts.
+* **7/12 Land Record Management**: Add, edit, or delete digital 7/12 records with real-time MSP quota recalculation.
+* **Slot Booking with Conflict Protection**: Visual indicators tagging previously booked slots with token numbers to prevent double-booking.
+* **Multilingual UI & Audio**: Complete bilingual support in **Marathi (मराठी)** and **English** with audio narration for low-literacy farmers.
+
+### 2. 🏛️ Mandi Admin Operations
+* **Digital Gate Check-In**: Instant token verification upon tractor arrival.
+* **Quality Inspection Modal**: Parameterized grading (Moisture %, Foreign Matter %, Damaged Kernel %) with automated penalty calculations.
+* **Weighbridge Confirmation**: Records gross, tare, and net weights with automatic MSP payout computation.
+* **Digital J-Form Issuance**: Generates official sales receipts with state emblem branding and verifiable transaction IDs.
+
+### 3. 👑 District Super Admin (Apex Governance & Vigilance)
+* **Statewide APMC Command Dashboard**: Aggregated metrics across all procurement centres (total quintals procured, total payouts disbursed, active queue throughput).
+* **Mandi Vigilance & Corruption Desk**: Dedicated tribunal reviewing complaints filed directly against mandis, scale tampering, or officer misconduct with official executive sanctions.
+* **APMC Centres Audit**: Comprehensive inspection of daily capacity, delays, and cancellation rates per centre.
+* **Statewide Broadcast Manager**: Post instant weather warnings, MSP revisions, or government schemes across all mandis.
 
 ---
 
@@ -45,326 +79,185 @@ Traditional agricultural mandis (procurement centers) often suffer from:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                 React Frontend (Vite)                   │
-│   • Tailwind CSS  • Lucide Icons  • React Router       │
-│   • AuthContext   • LanguageContext (i18n)              │
+│   • Tailwind CSS  • Lucide Icons  • React Router        │
+│   • AuthContext   • LanguageContext (i18n + Web Speech) │
+│   🔗 https://kisan-mandi-pied.vercel.app                │
 └────────────▲──────────────────────────────▲─────────────┘
-             │ HTTP / REST (Axios)          │ WebSocket (Socket.io-client)
-             │ via Vite Proxy (/api)        │ (ws://localhost:5000)
+             │ HTTPS / REST (Axios)         │ WebSocket (Socket.IO)
+             │ via /api                     │ (wss://kisan-mandi-api)
 ┌────────────▼──────────────────────────────▼─────────────┐
 │                 Node.js / Express Server                │
-│   • JWT Auth & OTP Verification                         │
+│   • JWT Authentication (3-Tier RBAC)                    │
 │   • Express Validator & Helmet Security                 │
 │   • Socket.IO Server (Real-time queue rooms)            │
-│   • REST Controllers (Bookings, MSP, J-Form, etc.)      │
+│   • REST Controllers (Bookings, Land Records, Updates)  │
+│   🔗 https://kisan-mandi-api-2hwb.onrender.com          │
 └───────────────────────────▲─────────────────────────────┘
-                            │ SQL Queries via Knex.js
+                            │ PostgreSQL Client via Knex.js
 ┌───────────────────────────▼─────────────────────────────┐
-│                 PostgreSQL Database                     │
-│   • Docker Container / Local Instance                   │
-│   • 12 Migrations (Farmers, Bookings, J-Forms, etc.)   │
+│                 Neon Cloud PostgreSQL                   │
+│   • 13 Knex Migrations & Seeds                          │
+│   • Farmers, Bookings, 7/12 Records, Announcements      │
+│   🐘 Neon Serverless Postgres (Singapore)               │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🗄 How Data is Stored (Database Schema)
+## 👥 Role-Based Access Control (RBAC)
 
-Data is stored in a relational **PostgreSQL** database managed using **Knex.js** migration and seed scripts (`server/src/migrations`).
-
-### Entity Relationship & Core Tables:
-
-1. **`farmers`**: Farmer accounts, mobile numbers, Aadhaar hash, role (`farmer` / `admin`), and bank details (Account No, IFSC, Bank Name) for Direct Benefit Transfer.
-2. **`procurement_centres`**: Mandi centers with district, state, capacity per day, and operating hours.
-3. **`time_slots`**: Time slots for centres with start time, end time, and maximum capacity.
-4. **`land_records`**: 7/12 land records (Survey number, Village, Total Acreage, Sown Crop, Max Yield Quota).
-5. **`msp_rates`**: Government-notified Minimum Support Price master for commodities (Wheat, Paddy, Mustard, Cotton, etc.) per quintal.
-6. **`bookings`**: Slot reservations containing token number (e.g. `TK-20260901-001`), farmer ID, centre ID, slot ID, commodity, estimated quantity, booking status (`booked`, `checked_in`, `in_progress`, `completed`, `cancelled`), and quality inspection data.
-7. **`payments`**: Payment records with gross amount, deductions, net MSP payable, DBT transaction reference, and status (`pending`, `processing`, `transferred`, `failed`).
-8. **`grievances`**: Farmer helpdesk tickets categorised by issue type (`payment_delay`, `slot_rescheduling`, `quality_dispute`) with resolution notes.
-9. **`otp_verifications`**: OTP codes with expiration timestamps for passwordless mobile logins.
-10. **`notifications`**: SMS/system notifications log dispatched to farmers.
+| Tier | Role | Description & Permissions |
+| :---: | :--- | :--- |
+| **Tier 1** | `farmer` | Book slots, view queue, manage 7/12 land records, track DBT payments, raise grievances against mandis. |
+| **Tier 2** | `admin` | Mandi procurement officer; check in farmers, conduct quality inspections, record weighbridge weights, complete transactions. |
+| **Tier 3** | `super_admin` | District Nodal Officer / APMC Director; statewide analytics, resolve vigilance complaints against mandis, audit centre performance, broadcast advisories. |
 
 ---
 
-## ⚙ How the Backend Works
+## 🔑 Quick Demo Credentials
 
-- **Server Engine (`server/src/index.js`)**: Express server wrapped in Node.js `http.createServer()` to support both HTTP endpoints and WebSocket connections simultaneously on port `5000`.
-- **Database Layer (`server/src/config/db.js`)**: Knex.js connection pool connected to PostgreSQL.
-- **Authentication & Security (`server/src/middleware/auth.js`)**:
-  - Stateless JSON Web Tokens (JWT) signed and verified with `JWT_SECRET`.
-  - Passwords hashed using `bcryptjs`.
-  - Role-based middleware (`authMiddleware`, `adminOnly`).
-  - Security headers enforced with `helmet`, CORS configured for the frontend origin.
-- **Real-Time Queue Engine (`server/src/socket/queue.socket.js`)**:
-  - Socket.IO rooms created per procurement centre (`centre_${centreId}`).
-  - When an admin updates a token's status (Checked In, In Progress, Completed), the server broadcasts `queue:updated` events to all clients connected to that centre room.
-- **Business Logic Controllers (`server/src/controllers/`)**:
-  - `booking.controller.js`: Validates farmer quota against land records before issuing tokens.
-  - `admin.controller.js`: Handles check-ins, quality inspection grading, and weight recordings.
-  - `jform.controller.js`: Automatically calculates deductions and generates official J-Form procurement receipts.
-  - `payment.controller.js`: Computes net payouts and updates DBT disbursement states.
+You can log in instantly using the **1-Click Demo Login Cards** on the login page:
+
+| Role | Mobile Number | Password | Profile Name |
+| :--- | :---: | :---: | :--- |
+| **👨‍🌾 Farmer** | `9876543210` | `password123` | Tukaram Patil (Pune) |
+| **👨‍🌾 Farmer 2** | `9876543211` | `password123` | Dnyaneshwar Shinde (Nashik) |
+| **🏛️ Mandi Admin** | `9999999999` | `password123` | Pune APMC Officer |
+| **👑 Super Admin** | `8888888888` | `password123` | District Nodal Officer / APMC Director |
 
 ---
 
-## 💻 How the Frontend Connects to the Backend
-
-1. **Vite Development Proxy (`client/vite.config.js`)**:
-   - Requests from the frontend matching `/api/*` are automatically forwarded to `http://localhost:5000/api/*`, eliminating CORS issues during development.
-2. **Axios Centralized API Client (`client/src/services/api.js`)**:
-   - A single Axios instance with request interceptors automatically attaches the JWT token (`Authorization: Bearer <token>`) from `localStorage` to all authenticated requests.
-3. **Socket.IO Real-time Connection (`client/src/services/socket.js`)**:
-   - Connects to the backend WebSocket server.
-   - Farmers/admins join centre-specific rooms (`joinQueueRoom(centreId)`) to receive instant queue movements without refreshing the page.
-4. **React Context State Management**:
-   - **`AuthContext.jsx`**: Persists logged-in user profile, role, token, and handles login/logout states.
-   - **`LanguageContext.jsx`**: Manages multilingual UI translations dynamically.
-5. **Protected Routing (`client/src/App.jsx`)**:
-   - React Router v6 with custom `<ProtectedRoute>` guards to separate farmer views from restricted `<AdminPage>` interfaces.
-
----
-
-## 🔄 End-to-End Data Flow
+## 🗄 Database Schema (13 Migrations)
 
 ```
-1. REGISTRATION & VERIFICATION
-   Farmer registers/logs in via OTP ──▶ Backend validates ──▶ Farmer adds 7/12 Land Record
-                                                                      │
-2. SLOT BOOKING                                                       ▼
-   Farmer selects Mandi & Slot ──▶ Quota checked against Land Acreage ──▶ Token Generated (e.g. TK-001)
-                                                                      │
-3. MANDI ARRIVAL & QUEUE                                              ▼
-   Farmer arrives at Mandi ──▶ Admin marks "Check-In" ──▶ Real-time Queue updates via WebSockets
-                                                                      │
-4. QUALITY INSPECTION & WEIGHING                                      ▼
-   Admin records actual weight & quality grade (A/B/C) ──▶ System computes MSP & deductions
-                                                                      │
-5. J-FORM & PAYMENT                                                   ▼
-   Digital J-Form Receipt Generated ──▶ DBT Payment initiated ──▶ Farmer tracks payment live
-```
-
----
-
-## 🛠 Tech Stack
-
-| Domain | Technology |
-|---|---|
-| **Frontend** | React 18, Vite, Tailwind CSS, React Router v6, Lucide React, React Hot Toast |
-| **Backend** | Node.js, Express.js, Knex.js Query Builder, Socket.IO |
-| **Database** | PostgreSQL 15 |
-| **Auth & Security** | JWT (JSON Web Tokens), Bcrypt.js, Helmet, Express-Validator |
-| **Containerization** | Docker & Docker Compose (PostgreSQL) |
-
----
-
-## 📂 Project Structure
-
-```
-kisan-mandi/
-├── docker-compose.yml           # PostgreSQL container definition
-├── client/                      # React Frontend (Vite)
-│   ├── index.html
-│   ├── vite.config.js           # Vite config & /api proxy
-│   ├── tailwind.config.js       # Tailwind CSS styling
-│   ├── package.json
-│   └── src/
-│       ├── App.jsx              # Application router & route guards
-│       ├── main.jsx             # React entry point
-│       ├── components/
-│       │   ├── common/Navbar.jsx
-│       │   └── admin/QualityInspectionModal.jsx
-│       ├── context/
-│       │   ├── AuthContext.jsx      # Global Auth & Token state
-│       │   └── LanguageContext.jsx  # Multilingual dictionary
-│       ├── pages/
-│       │   ├── HomePage.jsx
-│       │   ├── LoginPage.jsx
-│       │   ├── RegisterPage.jsx
-│       │   ├── BookSlotPage.jsx     # Slot booking & token creation
-│       │   ├── MyBookingsPage.jsx   # Farmer tokens & J-Form access
-│       │   ├── LiveQueuePage.jsx    # Real-time WebSocket mandi queue
-│       │   ├── PaymentTrackPage.jsx # DBT payment tracker
-│       │   ├── LandRecordsPage.jsx  # 7/12 Record & Quota manager
-│       │   ├── HelpdeskPage.jsx     # Grievances & support
-│       │   └── AdminPage.jsx        # Mandi officer operations
-│       └── services/
-│           ├── api.js           # Axios API calls & request interceptors
-│           └── socket.js        # Socket.IO client helpers
-└── server/                      # Node.js / Express Backend
-    ├── package.json
-    ├── .env.example
-    └── src/
-        ├── index.js             # Server entry & Socket.IO initialization
-        ├── config/
-        │   ├── db.js            # Knex database connection instance
-        │   └── knexfile.js      # Knex database configuration
-        ├── controllers/         # Business logic for all modules
-        ├── middleware/
-        │   ├── auth.js          # JWT & Role authorization
-        │   └── validate.js      # Express validator schema
-        ├── migrations/          # 12 Database migrations (tables & schemas)
-        ├── routes/              # Express API route endpoints
-        ├── seeds/               # Initial seed data (centres, MSP rates)
-        ├── services/            # OTP & SMS simulation services
-        └── socket/
-            └── queue.socket.js  # WebSocket queue room handlers
+001_create_farmers.js                      -> Farmers & Admins table with password hash and profile
+002_create_procurement_centres.js          -> APMC Mandi centres with capacity & operating hours
+003_create_time_slots.js                   -> Centre time slots with farmer limits
+004_create_bookings.js                     -> E-Token bookings, commodity, status, quality inspection
+005_create_payments.js                     -> Gross amount, net MSP, DBT transfer status
+006_create_notifications.js               -> SMS and in-app notifications
+007_create_otp_verifications.js           -> OTP verification store for phone registrations
+008_add_bank_details_to_farmers.js        -> DBT Account Number, IFSC, Bank Name, Branch
+009_create_msp_rates.js                   -> Government MSP rate master per quintal
+010_add_quality_inspection.js             -> Moisture %, foreign matter %, quality grade
+011_create_land_records_and_quota.js      -> Digital 7/12 records, acreage, crop sown, yield quotas
+012_create_grievances.js                  -> Dispute tickets linked to tokens
+013_add_super_admin_and_announcements.js  -> Super admin RBAC, vigilance escalation, mandi announcements
 ```
 
 ---
 
 ## 📡 API Reference
 
-### 🔐 Auth (`/api/auth`)
-- `POST /request-otp` — Request OTP for login
-- `POST /verify-otp` — Verify OTP & receive JWT token
-- `POST /register` — Register a new farmer with bank details
-- `POST /login` — Standard login
-- `GET /profile` — Fetch currently authenticated user profile
+### 🔐 Authentication (`/api/auth`)
+* `POST /api/auth/request-otp` — Request 6-digit registration OTP
+* `POST /api/auth/verify-otp` — Verify phone number via OTP
+* `POST /api/auth/register` — Complete farmer registration with bank details
+* `POST /api/auth/login` — Authenticate and receive JWT token
+* `GET /api/auth/profile` — Fetch logged-in user profile
+* `PUT /api/auth/profile` — Update personal and DBT bank details
 
-### 🏛 Centres & Slots (`/api/centres`)
-- `GET /` — List procurement centres (filterable by district)
-- `GET /:id` — Get centre details
-- `GET /:id/slots?date=YYYY-MM-DD` — Get available time slots for a given date
+### 🌾 7/12 Land Records (`/api/land-records`)
+* `GET /api/land-records` — List farmer's 7/12 records with live quota usage
+* `GET /api/land-records/quota/:commodity` — Get available quota for a specific crop
+* `POST /api/land-records` — Add new 7/12 land record
+* `PUT /api/land-records/:id` — Update survey number, acreage, or crop
+* `DELETE /api/land-records/:id` — Delete land record (with active booking validation)
 
-### 🎟 Bookings (`/api/bookings`)
-- `POST /` — Create a new slot booking & token
-- `GET /mine` — Fetch all bookings for logged-in farmer
-- `GET /:id` — Get booking details
-- `PATCH /:id/cancel` — Cancel a booking
+### 📅 Bookings & Queue (`/api/bookings`, `/api/queue`)
+* `GET /api/centres` — List procurement centres
+* `GET /api/centres/:id/slots` — Get available time slots for a centre
+* `POST /api/bookings` — Create a new slotted E-Token booking
+* `GET /api/bookings/my-bookings` — List logged-in farmer's bookings
+* `PATCH /api/bookings/:id/cancel` — Cancel an upcoming booking
+* `GET /api/queue/centre/:centreId` — Fetch live queue status for a mandi
 
-### 📊 Live Queue (`/api/queue`)
-- `GET /:centreId/live` — Get real-time queue snapshot for a centre
-- `GET /:centreId/position/:bookingId` — Get farmer's current position and estimated wait time
+### 📢 Announcements & Live Updates (`/api/updates`)
+* `GET /api/updates` — Get active announcements, weather advisories & MSP notices
+* `POST /api/updates` — Broadcast new advisory (Admin / Super Admin)
+* `DELETE /api/updates/:id` — Remove announcement
 
-### 🌾 MSP Rates & Land Records
-- `GET /api/msp-rates` — Get all notified MSP commodity rates
-- `GET /api/land-records` — Get logged-in farmer's 7/12 land records
-- `GET /api/land-records/quota/:commodity` — Check available procurement quota for a crop
-- `POST /api/land-records` — Add/verify a land record
-
-### 🧾 J-Form & Payments
-- `GET /api/jform/:bookingId` — Fetch/render digital J-Form receipt
-- `GET /api/payments` — Get payment records for logged-in farmer
-- `GET /api/payments/:bookingId` — Get payment status for a specific booking
-
-### 🛡 Admin Operations (`/api/admin`)
-- `PATCH /bookings/:id/check-in` — Check-in farmer at mandi gate
-- `PATCH /bookings/:id/start` — Move token to quality/weighing stage
-- `PATCH /bookings/:id/complete` — Complete inspection, record weight, grade, and generate payment
-- `PATCH /payments/:id` — Update payment status & reference number
-- `GET /centres/:centreId/stats` — Mandi operational statistics
+### 👑 Super Admin Governance (`/api/super-admin`)
+* `GET /api/super-admin/stats` — Statewide aggregated metrics (procurement kg, DBT payouts, grievances)
+* `GET /api/super-admin/mandi-reports` — List escalated malpractice and vigilance complaints
+* `PATCH /api/super-admin/grievances/:id` — Record Super Admin executive resolution order
+* `GET /api/super-admin/centres-audit` — Performance audit of all APMC centres
 
 ---
 
-## ⚡ WebSocket Events
+## ⚡ WebSocket Live Queue Events
 
-| Event | Direction | Description |
-|---|---|---|
-| `queue:join` | Client $\to$ Server | Farmer/Admin joins a specific centre's queue room (`{ centreId }`) |
-| `queue:leave` | Client $\to$ Server | Leaves the centre's queue room |
-| `queue:updated` | Server $\to$ Client | Broadcasted when a token moves status (checked-in, started, completed) |
+Connect to Socket.IO at root URL:
+```javascript
+import { io } from 'socket.io-client';
+const socket = io('https://kisan-mandi-api-2hwb.onrender.com');
+
+// Join centre queue room
+socket.emit('join:centre', centreId);
+
+// Listen for live token status updates
+socket.on('queue:updated', ({ centreId, token, status, currentServing }) => {
+  console.log(`Token ${token} updated to ${status}`);
+});
+```
 
 ---
 
-## 🚀 Getting Started & Setup Guide
+## 💻 Local Development & Setup Guide
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher)
-- [PostgreSQL](https://www.postgresql.org/) (or Docker to run PostgreSQL)
+* **Node.js**: v18 or higher
+* **PostgreSQL**: Local PostgreSQL or a free [Neon.tech](https://neon.tech) cloud database
 
----
-
-### Step 1: Start PostgreSQL
-
-**Option A: Using Docker (Recommended)**
+### 1. Clone the Repository
 ```bash
-docker-compose up -d
+git clone https://github.com/saksham-kamble/kisan-mandi.git
+cd kisan-mandi
 ```
 
-**Option B: Using Local PostgreSQL**
-Ensure PostgreSQL is running locally and create a database named `kisan_mandi`:
-```sql
-CREATE DATABASE kisan_mandi;
+### 2. Setup Server
+```bash
+cd server
+npm install
+
+# Create .env file
+cp .env.example .env
+# Fill in your DATABASE_URL, JWT_SECRET, and PORT
+
+# Run migrations and seeds
+npm run migrate
+npm run seed
+
+# Start server in development mode
+npm run dev
 ```
 
----
+### 3. Setup Client
+```bash
+cd ../client
+npm install
 
-### Step 2: Backend Setup
-
-1. Navigate to the `server` directory:
-   ```bash
-   cd server
-   ```
-2. Create your `.env` file:
-   ```bash
-   cp .env.example .env
-   ```
-   *(Update `DB_PASSWORD` if your local postgres password differs)*
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Run migrations & seed data:
-   ```bash
-   npm run migrate
-   npm run seed
-   ```
-5. Start the backend development server:
-   ```bash
-   npm run dev
-   ```
-   The backend server will run on **`http://localhost:5000`**.
-
----
-
-### Step 3: Frontend Setup
-
-1. Open a new terminal and navigate to the `client` directory:
-   ```bash
-   cd client
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
-4. Open your browser at **`http://localhost:5173`**.
-
----
-
-## 🔑 Default Test Accounts (from Seeds)
-
-| Role | Mobile / Email | Password / OTP | Purpose |
-|---|---|---|---|
-| **Farmer** | `9876543210` | `password123` (or OTP `123456`) | Test slot booking, land records, live queue, payments |
-| **Admin** | `9999999999` | `password123` | Access `/admin` dashboard for check-in, quality inspection, & J-Forms |
-
----
-
-## 🔒 Environment Variables
-
-Inside `server/.env`:
-
-```env
-PORT=5000
-NODE_ENV=development
-
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=kisan_mandi
-DB_USER=postgres
-DB_PASSWORD=postgres
-
-# JWT Secret
-JWT_SECRET=kisan_mandi_super_secret_jwt_key_2026
-JWT_EXPIRES_IN=7d
-
-# Fast2SMS (Optional for simulated SMS)
-FAST2SMS_API_KEY=your_key_here
-
-# Frontend URL
-CLIENT_URL=http://localhost:5173
+# Start Vite development server
+npm run dev
 ```
+Open **`http://localhost:5173`** in your browser.
+
+---
+
+## 🚀 Deployment Guide
+
+### Deploy Backend to Render:
+1. Create a **Web Service** pointing to `server` root directory.
+2. Build Command: `npm install && npm run migrate && npm run seed`
+3. Start Command: `npm start`
+4. Set Environment Variables: `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`, `CLIENT_URL`.
+
+### Deploy Frontend to Vercel:
+1. Import repository on **Vercel** with Root Directory set to `client`.
+2. Framework: `Vite`, Build: `npm run build`, Output: `dist`.
+3. Set Environment Variable: `VITE_API_URL=https://<your-render-api>/api`.
+
+---
+
+## 📜 License & Acknowledgements
+Built for the agricultural community of India to promote transparency, fair pricing, and zero-exploitation digital governance in APMC mandis. 🌾🇮🇳
