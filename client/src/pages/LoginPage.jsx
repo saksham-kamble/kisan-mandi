@@ -122,9 +122,17 @@ export default function LoginPage() {
 
             {/* Password with View/Hide toggle */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                {t('auth.password')}
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-bold text-gray-700">
+                  {t('auth.password')}
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-bold text-primary-600 hover:text-primary-700 hover:underline transition"
+                >
+                  {isMarathi ? 'पासवर्ड विसरलात? 🔐' : 'Forgot Password? 🔐'}
+                </Link>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />

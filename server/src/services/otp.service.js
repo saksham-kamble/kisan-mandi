@@ -217,6 +217,37 @@ class OTPService {
       expiresIn: this.otpExpiry / 1000,
     };
   }
+
+  /**
+   * Request OTP for Password Reset (must be registered)
+   */
+  async requestResetPasswordOTP(phone) {
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+
+    // Check if farmer exists
+    const existing = await db('farmers').where({ phone: cleanPhone }).first();
+    if (!existing) {
+      return {
+        success: false,
+        message: 'या मोबाइल नंबरवर कोणतेही नोंदणीकृत खाते आढळले नाही (No account found for this mobile number)',
+      };
+    }
+
+    const otp = this.generateOTP();
+    await this.storeOTP(cleanPhone, otp);
+    const sendResult = await this.sendOTP(cleanPhone, otp);
+
+    return {
+      success: true,
+      message: sendResult.simulated
+        ? `पासवर्ड रीसेट OTP: ${otp} (Demo Mode)`
+        : 'OTP sent successfully to your registered mobile number',
+      otp: otp,
+      farmerName: existing.name,
+      isSimulated: sendResult.simulated,
+      expiresIn: this.otpExpiry / 1000,
+    };
+  }
 }
 
 module.exports = new OTPService();

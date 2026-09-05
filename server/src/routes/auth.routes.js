@@ -2,7 +2,16 @@ const { Router } = require('express');
 const { body } = require('express-validator');
 const { validate } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
-const { requestOTP, verifyOTP, register, login, getProfile, updateProfile } = require('../controllers/auth.controller');
+const {
+  requestOTP,
+  verifyOTP,
+  register,
+  login,
+  getProfile,
+  updateProfile,
+  requestForgotPasswordOTP,
+  resetForgotPassword,
+} = require('../controllers/auth.controller');
 
 const router = Router();
 
@@ -111,6 +120,39 @@ router.put(
   ],
   validate,
   updateProfile
+);
+
+router.post(
+  '/forgot-password/request-otp',
+  [
+    body('phone')
+      .trim()
+      .isLength({ min: 10, max: 10 })
+      .isNumeric()
+      .withMessage('Valid 10-digit phone number required'),
+  ],
+  validate,
+  requestForgotPasswordOTP
+);
+
+router.post(
+  '/forgot-password/reset',
+  [
+    body('phone')
+      .trim()
+      .isLength({ min: 10, max: 10 })
+      .isNumeric()
+      .withMessage('Valid 10-digit phone number required'),
+    body('otp')
+      .trim()
+      .notEmpty()
+      .withMessage('OTP is required'),
+    body('new_password')
+      .isLength({ min: 6 })
+      .withMessage('New password must be at least 6 characters'),
+  ],
+  validate,
+  resetForgotPassword
 );
 
 module.exports = router;

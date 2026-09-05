@@ -23,6 +23,8 @@ export const register = (data) => api.post('/auth/register', data);
 export const login = (data) => api.post('/auth/login', data);
 export const getProfile = () => api.get('/auth/profile');
 export const updateProfile = (data) => api.put('/auth/profile', data);
+export const requestPasswordResetOTP = (data) => api.post('/auth/forgot-password/request-otp', data);
+export const resetPassword = (data) => api.post('/auth/forgot-password/reset', data);
 
 // Centres
 export const getCentres = (district) => api.get('/centres', { params: { district } });

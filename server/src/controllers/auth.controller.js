@@ -236,4 +236,86 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
-module.exports = { requestOTP, verifyOTP, register, login, getProfile, updateProfile };
+/** POST /api/auth/forgot-password/request-otp */
+const requestForgotPasswordOTP = async (req, res, next) => {
+  try {
+    const { phone } = req.body;
+    if (!phone || phone.length < 10) {
+      return res.status(400).json({ error: 'Valid 10-digit phone number required' });
+    }
+
+    const result = await otpService.requestResetPasswordOTP(phone);
+    if (!result.success) {
+      return res.status(404).json({ error: result.message });
+    }
+
+    res.json({
+      success: true,
+      message: result.message,
+      otp: result.otp,
+      farmerName: result.farmerName,
+      isSimulated: result.isSimulated,
+      expiresIn: result.expiresIn,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/** POST /api/auth/forgot-password/reset */
+const resetForgotPassword = async (req, res, next) => {
+  try {
+    const { phone, otp, new_password } = req.body;
+
+    if (!phone || !otp || !new_password) {
+      return res.status(400).json({ error: 'Phone, OTP, and new password are required' });
+    }
+
+    if (new_password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+
+    // Verify OTP
+    const verifyResult = await otpService.verifyOTP(cleanPhone, otp);
+    if (!verifyResult.valid) {
+      return res.status(400).json({ error: verifyResult.message || 'Invalid or expired OTP' });
+    }
+
+    // Check farmer exists
+    const farmer = await db('farmers').where({ phone: cleanPhone }).first();
+    if (!farmer) {
+      return res.status(404).json({ error: 'Farmer account not found' });
+    }
+
+    // Hash new password
+    const password_hash = await bcrypt.hash(new_password, 10);
+
+    await db('farmers').where({ id: farmer.id }).update({
+      password_hash,
+      updated_at: db.fn.now(),
+    });
+
+    // Cleanup OTP
+    await otpService.cleanupOTP(cleanPhone);
+
+    res.json({
+      success: true,
+      message: 'पासवर्ड यशस्वीरित्या बदलला गेला! (Password reset successfully. Please login with your new password.)',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  requestOTP,
+  verifyOTP,
+  register,
+  login,
+  getProfile,
+  updateProfile,
+  requestForgotPasswordOTP,
+  resetForgotPassword,
+};

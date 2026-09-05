@@ -6,6 +6,7 @@ import Navbar from './components/common/Navbar';
 import HomePage from './pages/HomePage';
 import RegisterPage from './pages/RegisterPage';
 import LoginPage from './pages/LoginPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import BookSlotPage from './pages/BookSlotPage';
 import MyBookingsPage from './pages/MyBookingsPage';
 import LiveQueuePage from './pages/LiveQueuePage';
@@ -65,6 +66,10 @@ function AppRoutes() {
           element={user ? <Navigate to="/" replace /> : <RegisterPage />}
         />
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+        <Route
+          path="/forgot-password"
+          element={user ? <Navigate to="/" replace /> : <ForgotPasswordPage />}
+        />
         <Route
           path="/profile"
           element={
