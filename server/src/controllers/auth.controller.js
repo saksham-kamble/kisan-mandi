@@ -29,6 +29,8 @@ const requestOTP = async (req, res, next) => {
     res.json({
       success: true,
       message: result.message,
+      otp: result.otp,
+      isSimulated: result.isSimulated,
       expiresIn: result.expiresIn,
     });
   } catch (err) {

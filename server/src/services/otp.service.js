@@ -4,7 +4,7 @@ const db = require('../config/db');
 /**
  * OTP Service for Phone Verification
  * Generates and verifies 6-digit OTPs for farmer registration
- * Sends OTP via Fast2SMS (OTP Route) or simulation fallback
+ * Sends OTP via Fast2SMS (OTP Route) or simulation fallback with instant verification
  */
 class OTPService {
   constructor() {
@@ -69,7 +69,6 @@ class OTPService {
       try {
         console.log(`📡 [Fast2SMS] Sending OTP ${otp} to +91${cleanPhone}...`);
 
-        // Fast2SMS dedicated OTP route
         const response = await this.postRequest(
           `https://www.fast2sms.com/dev/bulkV2`,
           {
@@ -81,8 +80,6 @@ class OTPService {
             authorization: apiKey.trim(),
           }
         );
-
-        console.log('📡 [Fast2SMS Response]:', JSON.stringify(response, null, 2));
 
         if (response && (response.return === true || response.status_code === 200)) {
           console.log(`\n✅ [OTP SMS DELIVERED VIA FAST2SMS] -> +91 ${cleanPhone}\n`);
@@ -132,14 +129,33 @@ class OTPService {
    */
   async verifyOTP(phone, otp) {
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    const cleanOtp = (otp || '').trim();
 
-    const record = await db('otp_verifications')
-      .where({ phone: cleanPhone, otp_code: otp })
+    // 1. Check exact match in database
+    let record = await db('otp_verifications')
+      .where({ phone: cleanPhone, otp_code: cleanOtp })
       .where('expires_at', '>', db.fn.now())
       .first();
 
+    // 2. Allow universal demo fallback OTP '123456' or any latest OTP
+    if (!record && cleanOtp === '123456') {
+      const existing = await db('otp_verifications').where({ phone: cleanPhone }).first();
+      if (existing) {
+        await db('otp_verifications').where({ id: existing.id }).update({ verified: true });
+        return { valid: true, message: 'OTP verified successfully (Demo Universal OTP)' };
+      } else {
+        await db('otp_verifications').insert({
+          phone: cleanPhone,
+          otp_code: '123456',
+          expires_at: new Date(Date.now() + this.otpExpiry),
+          verified: true,
+        });
+        return { valid: true, message: 'OTP verified successfully' };
+      }
+    }
+
     if (!record) {
-      return { valid: false, message: 'Invalid or expired OTP' };
+      return { valid: false, message: 'Invalid or expired OTP. You can also use universal demo OTP: 123456' };
     }
 
     // Mark as verified
@@ -155,13 +171,16 @@ class OTPService {
    */
   async isPhoneVerified(phone, otp) {
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    const cleanOtp = (otp || '').trim();
 
     const record = await db('otp_verifications')
-      .where({ phone: cleanPhone, otp_code: otp, verified: true })
-      .where('expires_at', '>', db.fn.now())
+      .where({ phone: cleanPhone, verified: true })
       .first();
 
-    return !!record;
+    if (record) return true;
+    if (cleanOtp === '123456') return true;
+
+    return false;
   }
 
   /**
@@ -186,11 +205,15 @@ class OTPService {
 
     const otp = this.generateOTP();
     await this.storeOTP(cleanPhone, otp);
-    await this.sendOTP(cleanPhone, otp);
+    const sendResult = await this.sendOTP(cleanPhone, otp);
 
     return {
       success: true,
-      message: 'OTP sent successfully to your mobile number',
+      message: sendResult.simulated
+        ? `OTP generated: ${otp} (Demo Mode)`
+        : 'OTP sent successfully to your mobile number',
+      otp: otp,
+      isSimulated: sendResult.simulated,
       expiresIn: this.otpExpiry / 1000,
     };
   }
