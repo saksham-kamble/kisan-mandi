@@ -15,7 +15,17 @@ const generateToken = async (slotId) => {
 /** POST /api/bookings — book a slot */
 const createBooking = async (req, res, next) => {
   try {
-    const { slot_id, commodity, estimated_quantity_kg } = req.body;
+    const {
+      slot_id,
+      commodity,
+      estimated_quantity_kg,
+      priority_level = 'standard',
+      quality_grade = null,
+      quality_score = null,
+      quality_metrics = null,
+      crop_image_url = null,
+      priority_reason = null,
+    } = req.body;
     const farmer_id = req.user.id;
     const requestedQty = parseFloat(estimated_quantity_kg);
 
@@ -83,6 +93,11 @@ const createBooking = async (req, res, next) => {
     const token_number = await generateToken(slot_id);
     const queue_position = slot.booked_count + 1;
 
+    // Determine priority weight
+    let priorityWeight = 0;
+    if (priority_level === 'express_grade_a') priorityWeight = 2;
+    if (priority_level === 'moisture_urgent') priorityWeight = 3;
+
     const [booking] = await db('bookings')
       .insert({
         farmer_id,
@@ -93,6 +108,13 @@ const createBooking = async (req, res, next) => {
         estimated_quantity_kg: requestedQty,
         queue_position,
         status: 'booked',
+        priority_level,
+        priority_weight: priorityWeight,
+        quality_grade,
+        quality_score: quality_score ? parseInt(quality_score, 10) : null,
+        quality_metrics: typeof quality_metrics === 'object' ? JSON.stringify(quality_metrics) : quality_metrics,
+        crop_image_url,
+        priority_reason: priority_reason || (priority_level === 'express_grade_a' ? 'AI Pre-Checked Grade A' : 'Standard Queue'),
       })
       .returning('*');
 

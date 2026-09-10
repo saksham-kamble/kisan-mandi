@@ -234,10 +234,48 @@ const getCentreStats = async (req, res, next) => {
   }
 };
 
+/** PATCH /api/admin/bookings/:id/priority — adjust booking quality priority */
+const updateBookingPriority = async (req, res, next) => {
+  try {
+    const { priority_level, priority_reason, quality_grade } = req.body;
+    const booking = await db('bookings').where({ id: req.params.id }).first();
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    let priorityWeight = 0;
+    if (priority_level === 'express_grade_a') priorityWeight = 2;
+    if (priority_level === 'moisture_urgent') priorityWeight = 3;
+
+    const updates = {
+      priority_level: priority_level || 'standard',
+      priority_weight: priorityWeight,
+    };
+    if (priority_reason !== undefined) updates.priority_reason = priority_reason;
+    if (quality_grade !== undefined) updates.quality_grade = quality_grade;
+
+    await db('bookings').where({ id: booking.id }).update(updates);
+
+    const slot = await db('time_slots').where({ id: booking.slot_id }).first();
+    const io = req.app.get('io');
+    if (io && slot) {
+      io.to(`centre-${slot.centre_id}`).emit('queue:updated', {
+        centre_id: slot.centre_id,
+        slot_id: booking.slot_id,
+      });
+    }
+
+    res.json({ message: 'Booking priority updated successfully', updates });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   checkInBooking,
   startProcessing,
   completeBooking,
   updatePayment,
   getCentreStats,
+  updateBookingPriority,
 };

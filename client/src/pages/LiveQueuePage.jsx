@@ -10,7 +10,7 @@ import {
 } from '../services/socket';
 import { useLanguage } from '../context/LanguageContext';
 import toast from 'react-hot-toast';
-import { Clock, Users, CheckCircle2, Volume2, VolumeX, Sparkles, MapPin } from 'lucide-react';
+import { Clock, Users, CheckCircle2, Volume2, VolumeX, Sparkles, MapPin, Zap, Award, AlertTriangle } from 'lucide-react';
 
 export default function LiveQueuePage() {
   const [centres, setCentres] = useState([]);
@@ -154,7 +154,11 @@ export default function LiveQueuePage() {
             label={t('liveQueue.nowServing')}
             value={queueData.currentToken ? queueData.currentToken.token_number : '---'}
             bgColor="bg-gradient-to-br from-amber-500 to-yellow-600 text-white"
-            subtext={queueData.currentToken?.commodity || t('liveQueue.centreReady')}
+            subtext={
+              queueData.currentToken?.priority_level === 'express_grade_a'
+                ? '⚡ Fast-Track Grade-A'
+                : queueData.currentToken?.commodity || t('liveQueue.centreReady')
+            }
           />
           <StatCard
             label={t('liveQueue.inQueue')}
@@ -163,16 +167,16 @@ export default function LiveQueuePage() {
             subtext={t('liveQueue.farmersWaiting')}
           />
           <StatCard
+            label={isMarathi ? 'फास्ट-ट्रॅक टोकन्स' : 'Fast-Track Tokens'}
+            value={queueData.stats.priority_count || 0}
+            bgColor="bg-gradient-to-br from-emerald-950 to-slate-900 border-2 border-yellow-400/50 text-yellow-300"
+            subtext={isMarathi ? 'ग्रेड-अ प्राधान्य रांग' : 'Grade-A Express Triage'}
+          />
+          <StatCard
             label={t('liveQueue.completedToday')}
             value={queueData.stats.completed}
             bgColor="bg-white/5 border border-white/10 text-green-400"
             subtext={t('liveQueue.procurementsDone')}
-          />
-          <StatCard
-            label={t('liveQueue.totalBookings')}
-            value={queueData.stats.total}
-            bgColor="bg-white/5 border border-white/10 text-blue-300"
-            subtext={t('liveQueue.scheduledToday')}
           />
         </div>
 
@@ -185,9 +189,17 @@ export default function LiveQueuePage() {
                 <Sparkles className="h-48 w-48 text-yellow-300" />
               </div>
 
-              <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-black uppercase tracking-widest mb-4">
-                🔔 {t('liveQueue.nowServing')}
-              </span>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-black uppercase tracking-widest">
+                  🔔 {t('liveQueue.nowServing')}
+                </span>
+                {queueData.currentToken?.priority_level === 'express_grade_a' && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-400 text-slate-950 text-xs font-black uppercase tracking-wider shadow-lg animate-pulse">
+                    <Zap className="w-3.5 h-3.5 fill-current" />
+                    {isMarathi ? 'ग्रेड-अ फास्ट-ट्रॅक' : 'Grade-A Fast-Track'}
+                  </span>
+                )}
+              </div>
 
               <div className="text-6xl sm:text-7xl md:text-8xl font-black my-4 tracking-wider text-yellow-300 drop-shadow-[0_10px_20px_rgba(253,224,71,0.3)] animate-pulse">
                 {queueData.currentToken ? queueData.currentToken.token_number : '---'}
@@ -199,6 +211,11 @@ export default function LiveQueuePage() {
                     <p className="text-yellow-200">{queueData.currentToken.farmer_name}</p>
                     <p className="text-emerald-200 text-lg font-normal">
                       🌾 {queueData.currentToken.commodity}
+                      {queueData.currentToken.quality_grade && (
+                        <span className="ml-2 text-xs font-bold text-yellow-300 bg-black/40 px-2.5 py-1 rounded-full border border-yellow-400/30">
+                          {queueData.currentToken.quality_grade}
+                        </span>
+                      )}
                     </p>
                   </div>
                 ) : (
@@ -222,42 +239,78 @@ export default function LiveQueuePage() {
                 <div className="space-y-3">
                   {queueData.queue
                     .filter((b) => ['booked', 'checked_in'].includes(b.status))
-                    .slice(0, 6)
-                    .map((item, index) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition"
-                      >
-                        <div className="flex items-center space-x-3.5">
-                          <span className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center justify-center font-black text-sm">
-                            {index + 1}
-                          </span>
-                          <div>
-                            <span className="font-extrabold text-lg text-white tracking-wide">
-                              {item.token_number}
+                    .slice(0, 8)
+                    .map((item, index) => {
+                      const isExpress = item.priority_level === 'express_grade_a';
+                      const isUrgent = item.priority_level === 'moisture_urgent';
+
+                      return (
+                        <div
+                          key={item.id}
+                          className={`flex items-center justify-between p-4 rounded-xl transition ${
+                            isExpress
+                              ? 'bg-gradient-to-r from-yellow-500/10 via-slate-900 to-emerald-950/80 border-2 border-yellow-400/60 shadow-lg'
+                              : isUrgent
+                              ? 'bg-red-950/30 border border-red-500/50'
+                              : 'bg-white/5 hover:bg-white/10 border border-white/5'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3.5">
+                            <span
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm ${
+                                isExpress
+                                  ? 'bg-yellow-400 text-slate-950 shadow-md font-mono'
+                                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                              }`}
+                            >
+                              {index + 1}
                             </span>
-                            <p className="text-xs text-emerald-300/80">{item.farmer_name}</p>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-lg text-white tracking-wide">
+                                  {item.token_number}
+                                </span>
+                                {isExpress && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-yellow-400 text-slate-950 flex items-center gap-1 shadow-sm">
+                                    <Zap className="w-3 h-3 fill-current" />
+                                    {isMarathi ? 'फास्ट-ट्रॅक' : 'Fast-Track'}
+                                  </span>
+                                )}
+                                {isUrgent && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-red-600 text-white flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    {isMarathi ? 'तातडीचे' : 'Urgent'}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-emerald-300/80 mt-0.5">
+                                {item.farmer_name}{' '}
+                                {item.quality_grade && (
+                                  <span className="text-yellow-300 font-semibold">• {item.quality_grade}</span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="text-sm font-semibold text-gray-200">
+                              {item.commodity}
+                            </span>
+                            <span
+                              className={`block text-xs font-bold ${
+                                item.status === 'checked_in'
+                                  ? 'text-amber-400'
+                                  : 'text-gray-400'
+                              }`}
+                            >
+                              {item.status === 'checked_in'
+                                ? `● ${t('liveQueue.checkedIn')}`
+                                : `○ ${t('liveQueue.booked')}`}
+                            </span>
                           </div>
                         </div>
-
-                        <div className="text-right">
-                          <span className="text-sm font-semibold text-gray-200">
-                            {item.commodity}
-                          </span>
-                          <span
-                            className={`block text-xs font-bold ${
-                              item.status === 'checked_in'
-                                ? 'text-amber-400'
-                                : 'text-gray-400'
-                            }`}
-                          >
-                            {item.status === 'checked_in'
-                              ? `● ${t('liveQueue.checkedIn')}`
-                              : `○ ${t('liveQueue.booked')}`}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               )}
             </div>

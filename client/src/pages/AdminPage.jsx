@@ -9,6 +9,7 @@ import {
   getRateForCommodity,
   getAllGrievances,
   resolveGrievance,
+  updateBookingPriority,
 } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import toast from 'react-hot-toast';
@@ -27,6 +28,8 @@ import {
   Send,
   UserCheck,
   Filter,
+  Zap,
+  Award,
 } from 'lucide-react';
 import QualityInspectionModal from '../components/admin/QualityInspectionModal';
 
@@ -180,6 +183,22 @@ export default function AdminPage() {
       fetchStats();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to complete');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePriorityChange = async (bookingId, priorityLevel) => {
+    setLoading(true);
+    try {
+      await updateBookingPriority(bookingId, {
+        priority_level: priorityLevel,
+        priority_reason: `Admin gate priority override: ${priorityLevel}`,
+      });
+      toast.success(isMarathi ? 'प्राधान्य स्तर अद्यतनित केला' : 'Queue priority updated');
+      fetchQueue();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to update priority');
     } finally {
       setLoading(false);
     }
@@ -344,7 +363,7 @@ export default function AdminPage() {
                         className="border-2 border-gray-200 rounded-2xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-primary-300 hover:shadow-md transition"
                       >
                         <div>
-                          <div className="flex items-center space-x-3 mb-2">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
                             <span className="text-xl font-black text-primary-800">
                               {booking.token_number}
                             </span>
@@ -361,13 +380,46 @@ export default function AdminPage() {
                             >
                               {booking.status.replace('_', ' ').toUpperCase()}
                             </span>
+
+                            {booking.priority_level === 'express_grade_a' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black uppercase bg-yellow-400 text-slate-950 border border-yellow-500 shadow-sm">
+                                <Zap className="w-3.5 h-3.5 fill-current" />
+                                {isMarathi ? 'ग्रेड-अ फास्ट-ट्रॅक' : 'Grade-A Express'}
+                              </span>
+                            )}
+                            {booking.priority_level === 'moisture_urgent' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black uppercase bg-red-600 text-white shadow-sm">
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                {isMarathi ? 'तातडीचे (ओलावा)' : 'Urgent Moisture'}
+                              </span>
+                            )}
                           </div>
+
                           <p className="text-sm font-semibold text-gray-700">
                             👤 {booking.farmer_name} • 🌾 {booking.commodity} • 🔢 {isMarathi ? 'रांग' : 'Queue'} #{booking.queue_position}
+                            {booking.quality_grade && (
+                              <span className="ml-2 inline-flex items-center gap-1 text-xs font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                                <Award className="w-3 h-3 text-amber-600" />
+                                AI: Grade {booking.quality_grade} ({booking.quality_score} pts)
+                              </span>
+                            )}
                           </p>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                          {/* Gate Priority Triage Quick Select */}
+                          {['booked', 'checked_in'].includes(booking.status) && (
+                            <select
+                              value={booking.priority_level || 'standard'}
+                              onChange={(e) => handlePriorityChange(booking.id, e.target.value)}
+                              className="text-xs font-bold border border-gray-300 rounded-lg px-2.5 py-2 bg-gray-50 text-gray-700 hover:bg-gray-100 transition"
+                              title="Gate Triage Priority"
+                            >
+                              <option value="standard">Standard Queue (FIFO)</option>
+                              <option value="express_grade_a">⚡ Fast-Track Grade-A</option>
+                              <option value="moisture_urgent">🚨 Urgent Priority</option>
+                            </select>
+                          )}
                           {booking.status === 'booked' && (
                             <button
                               onClick={() => handleCheckIn(booking.id)}

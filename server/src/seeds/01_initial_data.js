@@ -251,7 +251,7 @@ exports.seed = async function (knex) {
 
   const slots = await knex('time_slots').insert(slotRows).returning('*');
 
-  // 4. Sample Bookings
+  // 4. Sample Bookings with AI Quality Grading & Priority
   const [booking1, booking2, booking3] = await knex('bookings')
     .insert([
       {
@@ -262,6 +262,17 @@ exports.seed = async function (knex) {
         estimated_quantity_kg: 2500,
         status: 'in_progress',
         queue_position: 1,
+        priority_level: 'express_grade_a',
+        priority_weight: 2,
+        quality_grade: 'Grade A (Premium)',
+        quality_score: 95,
+        quality_metrics: JSON.stringify({
+          broken_grains_pct: 1.2,
+          foreign_matter_pct: 0.3,
+          moisture_est_pct: 10.4,
+          uniformity_pct: 97,
+        }),
+        priority_reason: 'AI Pre-Scan: Grade A Premium Grain (10.4% Moisture, 97% Uniformity)',
         checked_in_at: knex.fn.now(),
       },
       {
@@ -272,6 +283,17 @@ exports.seed = async function (knex) {
         estimated_quantity_kg: 1800,
         status: 'checked_in',
         queue_position: 2,
+        priority_level: 'standard',
+        priority_weight: 0,
+        quality_grade: 'Grade B (Standard FAQ)',
+        quality_score: 82,
+        quality_metrics: JSON.stringify({
+          broken_grains_pct: 2.8,
+          foreign_matter_pct: 1.1,
+          moisture_est_pct: 11.8,
+          uniformity_pct: 85,
+        }),
+        priority_reason: 'Standard Mandi Queue',
         checked_in_at: knex.fn.now(),
       },
       {
@@ -282,6 +304,11 @@ exports.seed = async function (knex) {
         estimated_quantity_kg: 4000,
         status: 'booked',
         queue_position: 1,
+        priority_level: 'standard',
+        priority_weight: 0,
+        quality_grade: null,
+        quality_score: null,
+        priority_reason: 'Standard Mandi Queue',
       },
     ])
     .returning('*');

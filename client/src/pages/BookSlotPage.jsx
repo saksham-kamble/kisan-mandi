@@ -20,8 +20,13 @@ import {
   FileCheck,
   BookmarkCheck,
   ExternalLink,
+  Zap,
+  Sparkles,
+  Camera,
+  RefreshCw,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import CropQualityScanner from '../components/common/CropQualityScanner';
 
 export default function BookSlotPage() {
   const [centres, setCentres] = useState([]);
@@ -36,6 +41,11 @@ export default function BookSlotPage() {
   const [quotaData, setQuotaData] = useState(null);
   const [loadingQuota, setLoadingQuota] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Dual Queue Choice: 'normal' vs 'ai_quality'
+  const [queueMode, setQueueMode] = useState('normal'); // 'normal' | 'ai_quality'
+  const [qualityData, setQualityData] = useState(null);
+
   const { t, isMarathi } = useLanguage();
   const navigate = useNavigate();
 
@@ -122,11 +132,30 @@ export default function BookSlotPage() {
 
     setLoading(true);
     try {
-      const { data } = await createBooking({
+      const payload = {
         slot_id: selectedSlot.id,
         ...formData,
-      });
-      toast.success(`${t('bookSlot.bookingSuccess')} ${data.booking.token_number} 🎉`);
+        priority_level: queueMode === 'ai_quality' && qualityData ? qualityData.priority_level : 'standard',
+        quality_grade: queueMode === 'ai_quality' && qualityData ? qualityData.quality_grade : null,
+        quality_score: queueMode === 'ai_quality' && qualityData ? qualityData.quality_score : null,
+        quality_metrics: queueMode === 'ai_quality' && qualityData ? qualityData.quality_metrics : null,
+        crop_image_url: queueMode === 'ai_quality' && qualityData ? qualityData.crop_image_url : null,
+        priority_reason:
+          queueMode === 'ai_quality' && qualityData
+            ? qualityData.priority_reason
+            : 'Standard Mandi Queue',
+      };
+
+      const { data } = await createBooking(payload);
+      const isPriority = data.booking.priority_level === 'express_grade_a';
+
+      toast.success(
+        isPriority
+          ? isMarathi
+            ? `⚡ ग्रेड-अ फास्ट-ट्रॅक टोकन तयार झाले: ${data.booking.token_number} 🎉`
+            : `⚡ Grade-A Express Fast-Track Token: ${data.booking.token_number} 🎉`
+          : `${t('bookSlot.bookingSuccess')} ${data.booking.token_number} 🎉`
+      );
       navigate('/my-bookings');
     } catch (err) {
       toast.error(err.response?.data?.error || t('bookSlot.bookingFailed'));
@@ -451,6 +480,114 @@ export default function BookSlotPage() {
                         : `Cannot exceed your remaining 7/12 quota of ${quotaData.remaining_quota_kg} kg.`}
                     </p>
                   )}
+              </div>
+
+              {/* Step 3.5: Queue Type & AI Quality Choice */}
+              <div className="border-t-2 border-gray-100 pt-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div>
+                    <label className="block text-base font-black text-gray-900">
+                      {isMarathi ? '⚡ रांग प्रकार निवडा (Queue Priority Option)' : '⚡ Choose Your Queue Option'}
+                    </label>
+                    <p className="text-xs text-gray-500">
+                      {isMarathi
+                        ? 'आपण सामान्य रांगेत जाऊ शकता किंवा AI फोटो स्कॅन करून फास्ट-ट्रॅक मिळवू शकता.'
+                        : 'Choose standard mandi queue or run AI quality pre-check for express entry.'}
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-black uppercase px-2.5 py-1 bg-yellow-100 text-yellow-900 rounded-full border border-yellow-300 w-fit">
+                    {isMarathi ? 'शेतकरी पसंती' : 'Farmer Choice'}
+                  </span>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {/* Option 1: Standard Queue */}
+                  <div
+                    onClick={() => {
+                      setQueueMode('normal');
+                    }}
+                    className={`p-4 sm:p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
+                      queueMode === 'normal'
+                        ? 'border-primary-600 bg-primary-50/70 shadow-md ring-2 ring-primary-500/20'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl">🚚</span>
+                        {queueMode === 'normal' && <CheckCircle2 className="w-5 h-5 text-primary-600" />}
+                      </div>
+                      <h4 className="text-base font-black text-gray-900 mt-2">
+                        {isMarathi ? 'मानक खरेदी रांग (Standard Queue)' : 'Standard Mandi Queue'}
+                      </h4>
+                      <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                        {isMarathi
+                          ? 'फोटो स्कॅन न करता थेट नेहमीप्रमाणे टोकन घ्या. मंडईच्या गेटवर नियमित क्रमाने प्रवेश.'
+                          : 'Standard first-come-first-serve entry without grain photo scan.'}
+                      </p>
+                    </div>
+                    <div className="text-[11px] font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg w-fit">
+                      {isMarathi ? 'नियमित टोकन (Standard FIFO)' : 'Regular FIFO Entry'}
+                    </div>
+                  </div>
+
+                  {/* Option 2: AI Quality Fast-Track */}
+                  <div
+                    onClick={() => {
+                      setQueueMode('ai_quality');
+                    }}
+                    className={`p-4 sm:p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
+                      queueMode === 'ai_quality'
+                        ? 'border-yellow-400 bg-gradient-to-br from-slate-900 to-emerald-950 text-white shadow-xl ring-2 ring-yellow-400/40'
+                        : 'border-emerald-200 bg-emerald-50/50 hover:border-emerald-400'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-2xl">⚡</span>
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                            queueMode === 'ai_quality' ? 'bg-yellow-400 text-slate-950' : 'bg-emerald-200 text-emerald-900'
+                          }`}>
+                            {isMarathi ? 'शिफारस केलेले' : 'Recommended'}
+                          </span>
+                        </div>
+                        {queueMode === 'ai_quality' && <CheckCircle2 className="w-5 h-5 text-yellow-300" />}
+                      </div>
+                      <h4 className={`text-base font-black mt-2 ${queueMode === 'ai_quality' ? 'text-white' : 'text-gray-900'}`}>
+                        {isMarathi ? 'AI गुणवत्ता तपासणी + फास्ट-ट्रॅक ⚡' : 'AI Quality Scan + Fast-Track ⚡'}
+                      </h4>
+                      <p className={`text-xs mt-1 leading-relaxed ${queueMode === 'ai_quality' ? 'text-emerald-200' : 'text-gray-600'}`}>
+                        {isMarathi
+                          ? 'पिकाचा फोटो स्कॅन करा. ग्रेड-अ दर्जा असल्यास २-३ तास आधी फास्ट-ट्रॅक प्राधान्य टोकन मिळवा.'
+                          : 'Scan crop sample. Grade-A quality unlocks Express Fast-Track Pass saving 2-3 hours.'}
+                      </p>
+                    </div>
+                    <div className={`text-[11px] font-bold px-2.5 py-1 rounded-lg w-fit ${
+                      queueMode === 'ai_quality' ? 'bg-yellow-400 text-slate-950 font-black' : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      {isMarathi ? '⭐ २-३ तास वेळेची बचत' : '⭐ Priority Queue Jump'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* If AI Quality is selected, render the Scanner / Verification card */}
+                {queueMode === 'ai_quality' && (
+                  <div className="pt-2 animate-fadeIn">
+                    <CropQualityScanner
+                      commodity={formData.commodity}
+                      initialData={qualityData}
+                      onScanComplete={(result) => {
+                        setQualityData(result);
+                        toast.success(
+                          isMarathi
+                            ? 'प्रमाणपत्र यशस्वीरीत्या जोडले! ग्रेड: ' + result.quality_grade
+                            : 'Certificate Attached! Grade: ' + result.quality_grade
+                        );
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="bg-emerald-50 border-2 border-emerald-200 p-4 rounded-xl flex items-start space-x-3">

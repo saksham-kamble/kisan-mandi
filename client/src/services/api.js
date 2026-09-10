@@ -80,6 +80,7 @@ export const deleteUpdate = (id) => api.delete(`/updates/${id}`);
 export const checkInBooking = (id) => api.patch(`/admin/bookings/${id}/check-in`);
 export const startProcessing = (id) => api.patch(`/admin/bookings/${id}/start`);
 export const completeBooking = (id, data) => api.patch(`/admin/bookings/${id}/complete`, data);
+export const updateBookingPriority = (id, data) => api.patch(`/admin/bookings/${id}/priority`, data);
 export const updatePayment = (id, data) => api.patch(`/admin/payments/${id}`, data);
 export const getCentreStats = (centreId) => api.get(`/admin/centres/${centreId}/stats`);
 

@@ -8,6 +8,7 @@ const {
   completeBooking,
   updatePayment,
   getCentreStats,
+  updateBookingPriority,
 } = require('../controllers/admin.controller');
 
 const router = Router();
@@ -17,6 +18,7 @@ router.use(authenticate, authorizeAdmin);
 
 router.patch('/bookings/:id/check-in', checkInBooking);
 router.patch('/bookings/:id/start', startProcessing);
+router.patch('/bookings/:id/priority', updateBookingPriority);
 router.patch(
   '/bookings/:id/complete',
   [

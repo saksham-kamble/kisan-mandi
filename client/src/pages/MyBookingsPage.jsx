@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getMyBookings, cancelBooking, getJFormUrl } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import toast from 'react-hot-toast';
-import { Calendar, Clock, MapPin, Wheat, CheckCircle2, AlertCircle, XCircle, Plus, Sparkles, QrCode, FileText } from 'lucide-react';
+import { Calendar, Clock, MapPin, Wheat, CheckCircle2, AlertCircle, XCircle, Plus, Sparkles, QrCode, FileText, Zap, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function MyBookingsPage() {
@@ -131,7 +131,11 @@ export default function MyBookingsPage() {
                 className="bg-white shadow-xl rounded-2xl overflow-hidden border-2 border-gray-100 hover:border-primary-300 transition-all duration-200"
               >
                 {/* Top Banner / Token Ribbon */}
-                <div className="bg-gradient-to-r from-primary-700 via-emerald-700 to-primary-800 text-white px-6 py-4 flex flex-wrap justify-between items-center gap-3">
+                <div className={`px-6 py-4 flex flex-wrap justify-between items-center gap-3 ${
+                  b.priority_level === 'express_grade_a'
+                    ? 'bg-gradient-to-r from-yellow-600 via-amber-700 to-emerald-800 text-white'
+                    : 'bg-gradient-to-r from-primary-700 via-emerald-700 to-primary-800 text-white'
+                }`}>
                   <div className="flex items-center space-x-3">
                     <span className="text-xs font-black uppercase tracking-wider bg-white/20 px-2.5 py-1 rounded-md">
                       {t('myBookings.token')}
@@ -139,6 +143,12 @@ export default function MyBookingsPage() {
                     <span className="text-2xl sm:text-3xl font-black tracking-wider text-yellow-300">
                       {b.token_number}
                     </span>
+                    {b.priority_level === 'express_grade_a' && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-yellow-400 text-slate-950 uppercase tracking-wide shadow-md">
+                        <Zap className="w-3.5 h-3.5 fill-current" />
+                        {isMarathi ? 'ग्रेड-अ फास्ट-ट्रॅक' : 'Grade-A Fast-Track'}
+                      </span>
+                    )}
                   </div>
                   <div>{getStatusBadge(b.status)}</div>
                 </div>
@@ -170,6 +180,35 @@ export default function MyBookingsPage() {
                           <p className="text-base font-extrabold text-primary-700 mt-0.5">#{b.queue_position}</p>
                         </div>
                       </div>
+
+                      {/* AI Quality / Assessment Certificate Box if available */}
+                      {b.quality_grade && (
+                        <div className="mt-3 p-3.5 rounded-xl bg-gradient-to-r from-amber-50/80 via-emerald-50/60 to-slate-50 border border-amber-200/80 flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-yellow-500 text-white flex items-center justify-center font-bold shadow-sm">
+                              <Award className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-extrabold text-gray-800 flex items-center gap-1">
+                                {isMarathi ? 'स्मार्ट AI गुणवत्ता तपासणी' : 'Smart AI Quality Pre-Check'}
+                                <span className="text-emerald-600">✓</span>
+                              </p>
+                              <p className="text-[11px] text-gray-600">
+                                {isMarathi ? 'प्रमाणपत्र श्रेणी:' : 'Certified Grade:'} <strong className="text-amber-800">{b.quality_grade}</strong> • {isMarathi ? 'गुणवत्ता स्कोअर:' : 'Score:'} <strong className="text-emerald-800">{b.quality_score}/100</strong>
+                              </p>
+                            </div>
+                          </div>
+                          {b.priority_level === 'express_grade_a' ? (
+                            <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              ⚡ {isMarathi ? 'एक्सप्रेस प्राधान्य मंजूर' : 'Express Triage Active'}
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-700">
+                              {isMarathi ? 'सामान्य तपासणी' : 'Standard Verification'}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Date / Time Card */}

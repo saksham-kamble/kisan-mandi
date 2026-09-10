@@ -18,36 +18,81 @@ const getLiveQueue = async (req, res, next) => {
     const slotIds = slots.map((s) => s.id);
 
     // Get all bookings for today's slots
-    const bookings = await db('bookings')
+    const rawBookings = await db('bookings')
       .join('farmers', 'bookings.farmer_id', 'farmers.id')
       .whereIn('bookings.slot_id', slotIds)
       .whereNot('bookings.status', 'cancelled')
       .select(
-        'bookings.id',
-        'bookings.token_number',
-        'bookings.commodity',
-        'bookings.status',
-        'bookings.queue_position',
-        'bookings.checked_in_at',
-        'bookings.completed_at',
-        'farmers.name as farmer_name'
-      )
-      .orderBy('bookings.queue_position');
+        'bookings.*',
+        'farmers.name as farmer_name',
+        'farmers.phone as farmer_phone',
+        'farmers.village as farmer_village',
+        'farmers.district as farmer_district'
+      );
+
+    // Safely parse quality_metrics
+    rawBookings.forEach((b) => {
+      if (b.quality_metrics && typeof b.quality_metrics === 'string') {
+        try {
+          b.quality_metrics = JSON.parse(b.quality_metrics);
+        } catch (e) {
+          b.quality_metrics = null;
+        }
+      }
+    });
+
+    // Priority Queue Sorting Algorithm:
+    // 1. in_progress first
+    // 2. checked_in: higher priority_weight first, then checked_in_at ASC
+    // 3. booked: higher priority_weight first, then queue_position ASC
+    // 4. completed: completed_at DESC
+    const sortedQueue = rawBookings.sort((a, b) => {
+      const statusWeight = { in_progress: 1, checked_in: 2, booked: 3, completed: 4 };
+      const aStatus = statusWeight[a.status] || 5;
+      const bStatus = statusWeight[b.status] || 5;
+
+      if (aStatus !== bStatus) return aStatus - bStatus;
+
+      // If both are checked in: compare priority_weight (higher first), then checked_in_at
+      if (a.status === 'checked_in') {
+        const pWeightDiff = (b.priority_weight || 0) - (a.priority_weight || 0);
+        if (pWeightDiff !== 0) return pWeightDiff;
+        return new Date(a.checked_in_at || 0) - new Date(b.checked_in_at || 0);
+      }
+
+      // If both are booked: compare priority_weight (higher first), then queue_position
+      if (a.status === 'booked') {
+        const pWeightDiff = (b.priority_weight || 0) - (a.priority_weight || 0);
+        if (pWeightDiff !== 0) return pWeightDiff;
+        return (a.queue_position || 0) - (b.queue_position || 0);
+      }
+
+      // If completed: latest first
+      if (a.status === 'completed') {
+        return new Date(b.completed_at || 0) - new Date(a.completed_at || 0);
+      }
+
+      return 0;
+    });
 
     // Current serving
-    const currentToken = bookings.find((b) => b.status === 'in_progress') || null;
-    const completed = bookings.filter((b) => b.status === 'completed').length;
-    const waiting = bookings.filter((b) =>
+    const currentToken = sortedQueue.find((b) => b.status === 'in_progress') || null;
+    const completed = sortedQueue.filter((b) => b.status === 'completed').length;
+    const waiting = sortedQueue.filter((b) =>
       ['booked', 'checked_in'].includes(b.status)
+    ).length;
+    const priorityCount = sortedQueue.filter(
+      (b) => (b.priority_weight || 0) > 0 && ['booked', 'checked_in', 'in_progress'].includes(b.status)
     ).length;
 
     res.json({
-      queue: bookings,
+      queue: sortedQueue,
       currentToken,
       stats: {
-        total: bookings.length,
+        total: sortedQueue.length,
         completed,
         waiting,
+        priority_count: priorityCount,
         in_progress: currentToken ? 1 : 0,
       },
     });
