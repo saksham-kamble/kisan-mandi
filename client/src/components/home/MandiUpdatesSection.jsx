@@ -10,8 +10,6 @@ import {
   Volume2,
   ArrowRight,
   ShieldCheck,
-  AlertTriangle,
-  FileText,
   Radio,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -80,9 +78,9 @@ export default function MandiUpdatesSection() {
             {mspRates.map((r, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <span className="text-yellow-300 font-bold">
-                  {isMarathi ? r.commodity_name_mr || r.commodity_name : r.commodity_name}:
+                  {isMarathi ? r.commodity_marathi || r.commodity : r.commodity}:
                 </span>
-                <span className="font-mono font-black text-white">₹{r.msp_price_per_quintal}/Qt</span>
+                <span className="font-mono font-black text-white">₹{r.msp_rate_per_quintal}/Qt</span>
                 <span className="text-slate-500">•</span>
               </div>
             ))}

@@ -200,81 +200,56 @@ exports.seed = async function (knex) {
     ])
     .returning('*');
 
-  // 3. Time Slots for Today & Tomorrow
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  // 3. Time Slots for Today + Next 6 Days (always fresh on re-seed)
+  const slotDays = [];
+  for (let i = 0; i < 7; i++) {
+    slotDays.push(new Date(Date.now() + i * 86400000).toISOString().split('T')[0]);
+  }
+  const today = slotDays[0];
+  const tomorrow = slotDays[1];
 
-  const slots = await knex('time_slots')
-    .insert([
-      // Today Pune centre 1
-      {
-        centre_id: centre1.id,
-        date: today,
-        start_time: '08:00',
-        end_time: '10:00',
-        max_farmers: 20,
-        booked_count: 2,
-        status: 'available',
-      },
-      {
-        centre_id: centre1.id,
-        date: today,
-        start_time: '10:00',
-        end_time: '12:00',
-        max_farmers: 20,
-        booked_count: 1,
-        status: 'available',
-      },
-      {
-        centre_id: centre1.id,
-        date: today,
-        start_time: '13:00',
-        end_time: '15:00',
-        max_farmers: 20,
-        booked_count: 0,
-        status: 'available',
-      },
-      // Tomorrow Pune centre 1
-      {
-        centre_id: centre1.id,
-        date: tomorrow,
-        start_time: '08:00',
-        end_time: '10:00',
-        max_farmers: 20,
-        booked_count: 0,
-        status: 'available',
-      },
-      // Today Nashik centre 2
-      {
-        centre_id: centre2.id,
-        date: today,
-        start_time: '09:00',
-        end_time: '11:00',
-        max_farmers: 15,
-        booked_count: 0,
-        status: 'available',
-      },
-      {
-        centre_id: centre2.id,
-        date: today,
-        start_time: '11:30',
-        end_time: '13:30',
-        max_farmers: 15,
-        booked_count: 0,
-        status: 'available',
-      },
-      // Today Baramati centre 3
-      {
-        centre_id: centre3.id,
-        date: today,
-        start_time: '09:00',
-        end_time: '12:00',
-        max_farmers: 25,
-        booked_count: 0,
-        status: 'available',
-      },
-    ])
-    .returning('*');
+  const slotRows = [];
+  // Each centre gets slots for the next 7 days
+  const centreSlotTemplates = [
+    { centre: centre1, templates: [
+      { start_time: '08:00', end_time: '10:00', max_farmers: 20 },
+      { start_time: '10:00', end_time: '12:00', max_farmers: 20 },
+      { start_time: '13:00', end_time: '15:00', max_farmers: 20 },
+    ]},
+    { centre: centre2, templates: [
+      { start_time: '09:00', end_time: '11:00', max_farmers: 15 },
+      { start_time: '11:30', end_time: '13:30', max_farmers: 15 },
+    ]},
+    { centre: centre3, templates: [
+      { start_time: '09:00', end_time: '12:00', max_farmers: 25 },
+    ]},
+    { centre: centre4, templates: [
+      { start_time: '08:00', end_time: '10:30', max_farmers: 18 },
+      { start_time: '11:00', end_time: '14:00', max_farmers: 18 },
+    ]},
+  ];
+
+  centreSlotTemplates.forEach(({ centre, templates }) => {
+    slotDays.forEach((date) => {
+      templates.forEach((tmpl) => {
+        slotRows.push({
+          centre_id: centre.id,
+          date,
+          start_time: tmpl.start_time,
+          end_time: tmpl.end_time,
+          max_farmers: tmpl.max_farmers,
+          booked_count: 0,
+          status: 'available',
+        });
+      });
+    });
+  });
+
+  // Mark a couple of today's Pune slots with existing bookings for demo
+  slotRows[0].booked_count = 2; // today 08:00-10:00 Pune
+  slotRows[1].booked_count = 1; // today 10:00-12:00 Pune
+
+  const slots = await knex('time_slots').insert(slotRows).returning('*');
 
   // 4. Sample Bookings
   const [booking1, booking2, booking3] = await knex('bookings')
