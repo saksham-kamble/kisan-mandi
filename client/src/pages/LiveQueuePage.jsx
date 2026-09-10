@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getCentres, getLiveQueue } from '../services/api';
 import {
   connectSocket,
@@ -9,8 +9,9 @@ import {
   offQueueUpdate,
 } from '../services/socket';
 import { useLanguage } from '../context/LanguageContext';
+import { playQueueChime, PriorityBadge } from '../utils/helpers';
 import toast from 'react-hot-toast';
-import { Clock, Users, CheckCircle2, Volume2, VolumeX, Sparkles, MapPin, Zap, Award, AlertTriangle } from 'lucide-react';
+import { Clock, CheckCircle2, Volume2, VolumeX, Sparkles, MapPin, Zap } from 'lucide-react';
 
 export default function LiveQueuePage() {
   const [centres, setCentres] = useState([]);
@@ -20,86 +21,58 @@ export default function LiveQueuePage() {
     currentToken: null,
     stats: { total: 0, completed: 0, waiting: 0 },
   });
-  const [loading, setLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const { t, isMarathi } = useLanguage();
 
   useEffect(() => {
     fetchCentres();
     connectSocket();
-
-    return () => {
-      disconnectSocket();
-    };
+    return () => disconnectSocket();
   }, []);
 
   useEffect(() => {
-    if (selectedCentre) {
+    if (!selectedCentre) return;
+    fetchQueue(selectedCentre.id);
+    joinQueueRoom(selectedCentre.id);
+
+    onQueueUpdate(() => {
       fetchQueue(selectedCentre.id);
-      joinQueueRoom(selectedCentre.id);
+      if (soundEnabled) playQueueChime();
+    });
 
-      onQueueUpdate(() => {
-        fetchQueue(selectedCentre.id);
-        if (soundEnabled) {
-          playChime();
-        }
-      });
-
-      return () => {
-        leaveQueueRoom(selectedCentre.id);
-        offQueueUpdate();
-      };
-    }
+    return () => {
+      leaveQueueRoom(selectedCentre.id);
+      offQueueUpdate();
+    };
   }, [selectedCentre, soundEnabled]);
-
-  const playChime = () => {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.5);
-    } catch (e) {
-      console.log('Audio not allowed yet without user interaction');
-    }
-  };
 
   const fetchCentres = async () => {
     try {
       const { data } = await getCentres();
-      setCentres(data.centres);
-      if (data.centres.length > 0) {
-        setSelectedCentre(data.centres[0]);
-      }
-    } catch (err) {
+      setCentres(data.centres || []);
+      if (data.centres?.length > 0) setSelectedCentre(data.centres[0]);
+    } catch {
       toast.error('Failed to load centres');
     }
   };
 
   const fetchQueue = async (centreId) => {
-    setLoading(true);
     try {
       const { data } = await getLiveQueue(centreId);
       setQueueData(data);
-    } catch (err) {
-      toast.error('Failed to load queue data');
-    } finally {
-      setLoading(false);
+    } catch {
+      toast.error('Failed to load queue');
     }
   };
 
+  const waitingList = queueData.queue.filter((b) => ['booked', 'checked_in'].includes(b.status));
+  const completedList = queueData.queue.filter((b) => b.status === 'completed');
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-primary-950 to-slate-900 text-white py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Header Bar */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white/5 backdrop-blur-md p-6 rounded-2xl border border-white/10 shadow-2xl">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/5 backdrop-blur-md p-6 rounded-2xl border border-white/10 shadow-2xl">
           <div>
             <h1 className="text-3xl sm:text-4xl font-black flex items-center tracking-tight">
               <span className="relative flex h-4 w-4 mr-3.5">
@@ -108,13 +81,10 @@ export default function LiveQueuePage() {
               </span>
               {t('liveQueue.title')}
             </h1>
-            <p className="text-emerald-300 text-sm mt-1">
-              {t('liveQueue.subtitle')}
-            </p>
+            <p className="text-emerald-300 text-sm mt-1">{t('liveQueue.subtitle')}</p>
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
-            {/* Audio Toggle */}
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
               className={`p-3 rounded-xl border transition ${
@@ -122,20 +92,16 @@ export default function LiveQueuePage() {
                   ? 'bg-emerald-600/30 border-emerald-400/40 text-emerald-300'
                   : 'bg-white/5 border-white/10 text-gray-400'
               }`}
-              title={soundEnabled ? 'Chime sound active' : 'Sound muted'}
+              title={soundEnabled ? 'Chime active' : 'Sound muted'}
             >
               {soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
             </button>
 
-            {/* Centre Selector */}
             <div className="relative flex-1 md:w-72">
               <select
                 value={selectedCentre?.id || ''}
-                onChange={(e) => {
-                  const centre = centres.find((c) => c.id === parseInt(e.target.value));
-                  setSelectedCentre(centre);
-                }}
-                className="w-full bg-white/10 text-white border-2 border-white/20 rounded-xl shadow-lg focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 p-3 pl-10 text-sm font-semibold transition"
+                onChange={(e) => setSelectedCentre(centres.find((c) => c.id === parseInt(e.target.value)))}
+                className="w-full bg-white/10 text-white border-2 border-white/20 rounded-xl p-3 pl-10 text-sm font-semibold transition"
               >
                 {centres.map((c) => (
                   <option key={c.id} value={c.id} className="bg-slate-900 text-white">
@@ -149,16 +115,12 @@ export default function LiveQueuePage() {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             label={t('liveQueue.nowServing')}
             value={queueData.currentToken ? queueData.currentToken.token_number : '---'}
             bgColor="bg-gradient-to-br from-amber-500 to-yellow-600 text-white"
-            subtext={
-              queueData.currentToken?.priority_level === 'express_grade_a'
-                ? '⚡ Fast-Track Grade-A'
-                : queueData.currentToken?.commodity || t('liveQueue.centreReady')
-            }
+            subtext={queueData.currentToken?.priority_level === 'express_grade_a' ? '⚡ Fast-Track Grade-A' : queueData.currentToken?.commodity || t('liveQueue.centreReady')}
           />
           <StatCard
             label={t('liveQueue.inQueue')}
@@ -193,12 +155,7 @@ export default function LiveQueuePage() {
                 <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-black uppercase tracking-widest">
                   🔔 {t('liveQueue.nowServing')}
                 </span>
-                {queueData.currentToken?.priority_level === 'express_grade_a' && (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-400 text-slate-950 text-xs font-black uppercase tracking-wider shadow-lg animate-pulse">
-                    <Zap className="w-3.5 h-3.5 fill-current" />
-                    {isMarathi ? 'ग्रेड-अ फास्ट-ट्रॅक' : 'Grade-A Fast-Track'}
-                  </span>
-                )}
+                <PriorityBadge priorityLevel={queueData.currentToken?.priority_level} isMarathi={isMarathi} />
               </div>
 
               <div className="text-6xl sm:text-7xl md:text-8xl font-black my-4 tracking-wider text-yellow-300 drop-shadow-[0_10px_20px_rgba(253,224,71,0.3)] animate-pulse">
@@ -219,9 +176,7 @@ export default function LiveQueuePage() {
                     </p>
                   </div>
                 ) : (
-                  <p className="text-emerald-200 font-normal">
-                    {t('liveQueue.noFarmerServing')}
-                  </p>
+                  <p className="text-emerald-200 font-normal">{t('liveQueue.noFarmerServing')}</p>
                 )}
               </div>
             </div>
@@ -233,84 +188,53 @@ export default function LiveQueuePage() {
                 {t('liveQueue.nextUp')}
               </h2>
 
-              {queueData.queue.filter((b) => ['booked', 'checked_in'].includes(b.status)).length === 0 ? (
+              {waitingList.length === 0 ? (
                 <p className="text-gray-400 text-center py-8">{t('liveQueue.noMoreFarmers')}</p>
               ) : (
                 <div className="space-y-3">
-                  {queueData.queue
-                    .filter((b) => ['booked', 'checked_in'].includes(b.status))
-                    .slice(0, 8)
-                    .map((item, index) => {
-                      const isExpress = item.priority_level === 'express_grade_a';
-                      const isUrgent = item.priority_level === 'moisture_urgent';
-
-                      return (
-                        <div
-                          key={item.id}
-                          className={`flex items-center justify-between p-4 rounded-xl transition ${
-                            isExpress
-                              ? 'bg-gradient-to-r from-yellow-500/10 via-slate-900 to-emerald-950/80 border-2 border-yellow-400/60 shadow-lg'
-                              : isUrgent
-                              ? 'bg-red-950/30 border border-red-500/50'
-                              : 'bg-white/5 hover:bg-white/10 border border-white/5'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-3.5">
-                            <span
-                              className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm ${
-                                isExpress
-                                  ? 'bg-yellow-400 text-slate-950 shadow-md font-mono'
-                                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
-                              }`}
-                            >
-                              {index + 1}
-                            </span>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-extrabold text-lg text-white tracking-wide">
-                                  {item.token_number}
-                                </span>
-                                {isExpress && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-yellow-400 text-slate-950 flex items-center gap-1 shadow-sm">
-                                    <Zap className="w-3 h-3 fill-current" />
-                                    {isMarathi ? 'फास्ट-ट्रॅक' : 'Fast-Track'}
-                                  </span>
-                                )}
-                                {isUrgent && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-red-600 text-white flex items-center gap-1">
-                                    <AlertTriangle className="w-3 h-3" />
-                                    {isMarathi ? 'तातडीचे' : 'Urgent'}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-emerald-300/80 mt-0.5">
-                                {item.farmer_name}{' '}
-                                {item.quality_grade && (
-                                  <span className="text-yellow-300 font-semibold">• {item.quality_grade}</span>
-                                )}
-                              </p>
+                  {waitingList.slice(0, 8).map((item, index) => {
+                    const isExpress = item.priority_level === 'express_grade_a';
+                    return (
+                      <div
+                        key={item.id}
+                        className={`flex items-center justify-between p-4 rounded-xl transition ${
+                          isExpress
+                            ? 'bg-gradient-to-r from-yellow-500/10 via-slate-900 to-emerald-950/80 border-2 border-yellow-400/60 shadow-lg'
+                            : 'bg-white/5 hover:bg-white/10 border border-white/5'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3.5">
+                          <span
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm ${
+                              isExpress
+                                ? 'bg-yellow-400 text-slate-950 shadow-md font-mono'
+                                : 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                            }`}
+                          >
+                            {index + 1}
+                          </span>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-lg text-white tracking-wide">
+                                {item.token_number}
+                              </span>
+                              <PriorityBadge priorityLevel={item.priority_level} isMarathi={isMarathi} />
                             </div>
-                          </div>
-
-                          <div className="text-right">
-                            <span className="text-sm font-semibold text-gray-200">
-                              {item.commodity}
-                            </span>
-                            <span
-                              className={`block text-xs font-bold ${
-                                item.status === 'checked_in'
-                                  ? 'text-amber-400'
-                                  : 'text-gray-400'
-                              }`}
-                            >
-                              {item.status === 'checked_in'
-                                ? `● ${t('liveQueue.checkedIn')}`
-                                : `○ ${t('liveQueue.booked')}`}
-                            </span>
+                            <p className="text-xs text-emerald-300/80 mt-0.5">
+                              {item.farmer_name} {item.quality_grade && `• ${item.quality_grade}`}
+                            </p>
                           </div>
                         </div>
-                      );
-                    })}
+
+                        <div className="text-right">
+                          <span className="text-sm font-semibold text-gray-200">{item.commodity}</span>
+                          <span className={`block text-xs font-bold ${item.status === 'checked_in' ? 'text-amber-400' : 'text-gray-400'}`}>
+                            {item.status === 'checked_in' ? `● ${t('liveQueue.checkedIn')}` : `○ ${t('liveQueue.booked')}`}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -323,29 +247,22 @@ export default function LiveQueuePage() {
               {t('liveQueue.completedToday')}
             </h2>
 
-            {queueData.queue.filter((b) => b.status === 'completed').length === 0 ? (
+            {completedList.length === 0 ? (
               <p className="text-gray-400 text-sm py-8 text-center">{t('liveQueue.noCompleted')}</p>
             ) : (
               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                {queueData.queue
-                  .filter((b) => b.status === 'completed')
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-3.5 bg-white/5 rounded-xl border border-white/5 flex items-center justify-between"
-                    >
-                      <div>
-                        <span className="font-bold text-white">{item.token_number}</span>
-                        <p className="text-xs text-gray-400">{item.farmer_name}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs font-semibold text-emerald-300">
-                          {item.commodity}
-                        </span>
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                      </div>
+                {completedList.map((item) => (
+                  <div key={item.id} className="p-3.5 bg-white/5 rounded-xl border border-white/5 flex items-center justify-between">
+                    <div>
+                      <span className="font-bold text-white">{item.token_number}</span>
+                      <p className="text-xs text-gray-400">{item.farmer_name}</p>
                     </div>
-                  ))}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-semibold text-emerald-300">{item.commodity}</span>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
